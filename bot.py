@@ -1,11 +1,10 @@
 import logging
 import os
 from typing import List, Text
-import qr
-import read
-from telegram import Update, update
-from telegram.ext import *
 
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import *
+import rgqr
 # Configurar el Login
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -25,16 +24,14 @@ def start(update: Update, context: CallbackContext) -> None:
     user = update.message.chat_id
     user_name = update.effective_user
     logger.info(f'Users: {user_name.first_name} is starting')
-
-    context.bot.sendMessage(
-        chat_id=user, 
-        parse_mode="MarkdownV2",
-        text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo *QR*, incluso leer cualquier otro\n\n"
-             "Aqui tienes una _lista de los comandos_ a usar\n"
-             "1️⃣ Enviar texto para convertir a *QR*: /to\_qr\n"
-             "2️⃣ Enviar *QR* para leerlo: /to\_qr\n"
-             "3️⃣ Para mas ayuda: /help\n"
-            )
+    
+    update.message.reply_text(
+        text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo QR, incluso leer cualquier otro\n\n Seleccione la opcion deseada",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(text="Convertir a QR", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr", callback_data="from_qr")],
+            [InlineKeyboardButton(text="More Help", callback_data="help")]   
+        ])
+    )
     
 
 def help(update: Update, context: CallbackContext) -> None:
@@ -49,7 +46,16 @@ def help(update: Update, context: CallbackContext) -> None:
              "📌*Codigo QR:* Los códigos QR \(Quick Response\) son códigos de barras, capaces de almacenar determinado tipo de información, como una URL, SMS, EMail, Texto, etc\. Gracias al auge de los nuevos teléfonos inteligentes o SmarthPhone 📱 estos códigos QR están actualmente muy de moda 📈\n\n"
              "Este bot 🤖 es muy simple, solo tienes que segir los pasos cuando pulses aqui /to\_qr y tendras tu imagen 👌🏻, vamos❕❕ pulsa aqui /to\_qr ya❕❕\."
             )
+
+def more_help(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
     
+    query.edit_message_text(
+            "📌*Codigo QR:* Los códigos QR \(Quick Response\) son códigos de barras, capaces de almacenar determinado tipo de información, como una URL, SMS, EMail, Texto, etc\. Gracias al auge de los nuevos teléfonos inteligentes o SmarthPhone 📱 estos códigos QR están actualmente muy de moda 📈\n\n"
+             "Este bot 🤖 es muy simple, solo tienes que segir los pasos cuando pulses aqui /to\_qr y tendras tu imagen 👌🏻, vamos❕❕ pulsa aqui /to\_qr ya❕❕\."
+    )
+
 # CONVERSACION PARA GENERAR CODIGO QR
 def in_qr(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
@@ -61,16 +67,22 @@ def in_qr(update: Update, context: CallbackContext) -> int:
     )
     return GETNAME
 
+def to_qr(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()
+    
+    query.edit_message_text(
+        'Por favor, envie el texto que desea llevar a codigo QR\n'
+        'Si desea cancelar, toque aqui /cancel'
+    )
+    return GETNAME
+
 def get_name(update: Update, context: CallbackContext) -> None:
-    user = update.effective_user
-    logger.info(f'Users: {user.first_name} is making QR code')
-
-    text = update.message.text   # Guardo el texto entrado
-    chat_id = update.message.chat_id
-
-    name = qr.generetor(text)    # Aplico la funcion generetor q retorna el nombre de la imagen del codigo 
-    with open(name, "rb") as file:      # Abro la imagen en modo rb q es "lectura de binarios"
-        context.bot.sendPhoto(chat_id=chat_id, photo=file)        # Envio la imagen al chat
+    text = update.message.text
+    chat = update.message.chat
+    
+    file = rgqr.generetor_qr(text)
+    rgqr.send_file(file, chat)
 
     return ConversationHandler.END
 
@@ -81,6 +93,14 @@ def from_qr(update: Update, context: CallbackContext) -> int:
 
     update.message.reply_text(
         'Por favor, envie la foto del QR que desea decodificar'
+    )
+    return GETIMG
+def pass_qr(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()
+    
+    query.edit_message_text(
+                'Por favor, envie la foto del QR que desea decodificar'
     )
     return GETIMG
 
@@ -95,9 +115,8 @@ def get_img(update: Update, context: CallbackContext) -> None:
     file_id = update.message.photo[-1]   # Aquiero la ultima posicion de la lista de photo, para trabajar con tu valor
     new_file = context.bot.getFile(file_id)  # lo guardo en new_file
     new_file.download(name)  # lo descargo
-
-    texto = read.read_qr(name)  # Aplico la funcion read q retorna la lectura del codigo
-
+    
+    texto = rgqr.read_qr(name)
     context.bot.sendMessage(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
@@ -127,7 +146,9 @@ def main():
     dp = update.dispatcher
     # CREAMOS CONVERSACION PARA GENERAR QR
     conv_handler_add = ConversationHandler(
-        entry_points=[CommandHandler("to_qr", in_qr)],
+        entry_points=[
+            CommandHandler("to_qr", in_qr),
+            CallbackQueryHandler(pattern="to_qr", callback=to_qr)],
         states ={
             GETNAME: [MessageHandler(Filters.text & ~Filters.command,  get_name)]
         },
@@ -135,7 +156,9 @@ def main():
     )
     # CREAMOS CONVERSACION PARA LEER QR
     conv_handler_read = ConversationHandler(
-        entry_points=[CommandHandler('from_qr', from_qr)],
+        entry_points=[
+            CommandHandler('from_qr', from_qr),
+            CallbackQueryHandler(pattern="from_qr", callback=pass_qr)],
         states={
             GETIMG:[MessageHandler(Filters.photo & ~Filters.command, get_img)]
         },
@@ -146,6 +169,7 @@ def main():
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(conv_handler_add)
     dp.add_handler(conv_handler_read)
+    dp.add_handler(CallbackQueryHandler(pattern="help", callback=more_help))
 
     # INICIAMOS NUESTRO BOT 
     update.start_polling()
