@@ -11,7 +11,7 @@ def generetor(string):
     while num in list_names:  
         num = random.randint(1, 1000)  
 
-    name = './qr_export/'+ str(num) +'.png'
+    name = str(num) +'.png'
     # Abrimos un archivo en modo escritura que es donde se guardará nuestro código.
     with open(name, 'wb') as img_file:
         # Guardamos nuestro código en el archivo que creamos y lo cerramos
