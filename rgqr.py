@@ -1,5 +1,5 @@
 import qrcode
-from pyzbar.pyzbar import decode # Libreria para descodificar qr
+#from pyzbar.pyzbar import decode # Libreria para descodificar qr
 from PIL import Image # Libreria para trabajar con imagenes
 import os
 from telegram import ChatAction
