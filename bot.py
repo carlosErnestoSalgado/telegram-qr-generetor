@@ -13,11 +13,6 @@ logger = logging.getLogger(__name__)
 
 # ESTADOS DE LA CONVERSACION
 GETNAME = 0
-GETIMG = 0
-
-# VARIABLES GLOBALES
-name = []
-name_dictionary = {}
 
 # COMANDOS NORMALES DEL BOT
 def start(update: Update, context: CallbackContext) -> None:
@@ -28,7 +23,7 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(
         text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo QR, incluso leer cualquier otro\n\n Seleccione la opcion deseada",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
+            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr")],
             [InlineKeyboardButton(text="More Help 💡", callback_data="help")]
         ])
     )
@@ -40,7 +35,7 @@ def back(update: Update, context: CallbackContext):
     query.edit_message_text(
         text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo QR, incluso leer cualquier otro\n\n Seleccione la opcion deseada",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
+            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr")],
             [InlineKeyboardButton(text="More Help 💡", callback_data="help")] 
         ])
     )
@@ -63,8 +58,8 @@ def more_help(update: Update, context: CallbackContext):
     query.answer()
     
     query.edit_message_text(
-           text="📌*Codigo QR:* Los códigos QR \(Quick Response\) son códigos de barras, capaces de almacenar determinado tipo de información, como una URL, SMS, EMail, Texto, etc\. Gracias al auge de los nuevos teléfonos inteligentes o SmarthPhone 📱 estos códigos QR están actualmente muy de moda 📈\n\n"
-                "Este bot 🤖 es muy simple, solo tienes que segir los pasos cuando pulses aqui /to\_qr y tendras tu imagen 👌🏻, vamos❕❕ pulsa aqui /to\_qr ya❕❕\.",
+           text="📌Codigo QR: Los códigos QR (Quick Response) son códigos de barras, capaces de almacenar determinado tipo de información, como una URL, SMS, EMail, Texto, etc. Gracias al auge de los nuevos teléfonos inteligentes o SmarthPhone 📱 estos códigos QR están actualmente muy de moda 📈\n\n"
+                "Este bot 🤖 es muy simple, solo tienes que segir los pasos cuando pulses aqui /to_qr y tendras tu imagen 👌🏻, vamos❕❕ pulsa aqui /to_qr ya❕❕.",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(text="Back ↩️", callback_data="back")]   
         ])
@@ -99,52 +94,15 @@ def get_name(update: Update, context: CallbackContext) -> None:
 
     return ConversationHandler.END
 
-# CONVERSACION PARA LEER CODIGO QR
-def from_qr(update: Update, context: CallbackContext) -> int:
-    user = update.effective_user
-    logger.info(f"User: {user.first_name} convert from QR code")
 
-    update.message.reply_text(
-        'Por favor, envie la foto del QR que desea decodificar'
-    )
-    return GETIMG
-def pass_qr(update: Update, context: CallbackContext) -> int:
-    query = update.callback_query
-    query.answer()
-    
-    query.edit_message_text(
-        text='Por favor, envie el codigo QR que desea leer\n Si desea cancelar, toque aqui /cancel'
-    )
-    return GETIMG
-
-def get_img(update: Update, context: CallbackContext) -> None:
-    user = update.effective_user
-    logger.info(f'Users: {user.first_name} is reading QR code')
-    chat_id = update.message.chat_id
-    name = update.message.message_id # Adquiero el id del mensaje enviado q es unico para cada uno (Evitando conflicto de nombres)
-    name = str(name) + '.png'  # Paso el valor de name a str y le agrego el formato .png 
-
-    # Descargando la imagen entrada
-    file_id = update.message.photo[-1]   # Aquiero la ultima posicion de la lista de photo, para trabajar con tu valor
-    new_file = context.bot.getFile(file_id)  # lo guardo en new_file
-    new_file.download(name)  # lo descargo
-    
-    texto = rgqr.read_qr(name)
-    context.bot.sendMessage(
-        chat_id=chat_id,
-        parse_mode="MarkdownV2",
-        text=f"*Resultado de lectura de codigo*: _{texto}_"
-        )
-    return ConversationHandler.END
-
-# COMANDO PARA CANCELAR CUALQUIERA DE LAS DOS CONVERSACIONES
+# COMANDO PARA CANCELAR CONVERSACION
 def cancel(update: Update, context: CallbackContext)->None:
     user = update.effective_user
     logger.info(f'Users: {user.first_name}, cancel process')
     update.message.reply_text(
         text='Se ha interrumpido el proceso de convercion.',
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
+            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr")],
             [InlineKeyboardButton(text="More Help 💡", callback_data="help")] 
         ])
 )
@@ -171,21 +129,11 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)]
     )
-    # CREAMOS CONVERSACION PARA LEER QR
-    conv_handler_read = ConversationHandler(
-        entry_points=[
-            CommandHandler('from_qr', from_qr),
-            CallbackQueryHandler(pattern="from_qr", callback=pass_qr)],
-        states={
-            GETIMG:[MessageHandler(Filters.photo & ~Filters.command, get_img)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)]
-    )
+
     # CREAMOS LOS MANEJADORES
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(conv_handler_add)
-    dp.add_handler(conv_handler_read)
     dp.add_handler(CallbackQueryHandler(pattern="help", callback=more_help))
     dp.add_handler(CallbackQueryHandler(pattern="back", callback=back))
     # INICIAMOS NUESTRO BOT 
