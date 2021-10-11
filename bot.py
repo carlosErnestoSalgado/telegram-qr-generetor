@@ -2,7 +2,7 @@ import logging
 import os
 from typing import List, Text
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, replymarkup
 from telegram.ext import *
 import rgqr
 # Configurar el Login
@@ -28,11 +28,23 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(
         text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo QR, incluso leer cualquier otro\n\n Seleccione la opcion deseada",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(text="Convertir a QR", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr", callback_data="from_qr")],
-            [InlineKeyboardButton(text="More Help", callback_data="help")]   
+            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
+            [InlineKeyboardButton(text="More Help 💡", callback_data="help")],
+            [InlineKeyboardButton(text="Back ↩️", callback_data="back")]   
         ])
     )
+
+def back(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
     
+    query.edit_message_text(
+        text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo QR, incluso leer cualquier otro\n\n Seleccione la opcion deseada",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
+            [InlineKeyboardButton(text="More Help 💡", callback_data="help")] 
+        ])
+    )
 
 def help(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
@@ -52,8 +64,11 @@ def more_help(update: Update, context: CallbackContext):
     query.answer()
     
     query.edit_message_text(
-            "📌*Codigo QR:* Los códigos QR \(Quick Response\) son códigos de barras, capaces de almacenar determinado tipo de información, como una URL, SMS, EMail, Texto, etc\. Gracias al auge de los nuevos teléfonos inteligentes o SmarthPhone 📱 estos códigos QR están actualmente muy de moda 📈\n\n"
-             "Este bot 🤖 es muy simple, solo tienes que segir los pasos cuando pulses aqui /to\_qr y tendras tu imagen 👌🏻, vamos❕❕ pulsa aqui /to\_qr ya❕❕\."
+           text="📌*Codigo QR:* Los códigos QR \(Quick Response\) son códigos de barras, capaces de almacenar determinado tipo de información, como una URL, SMS, EMail, Texto, etc\. Gracias al auge de los nuevos teléfonos inteligentes o SmarthPhone 📱 estos códigos QR están actualmente muy de moda 📈\n\n"
+                "Este bot 🤖 es muy simple, solo tienes que segir los pasos cuando pulses aqui /to\_qr y tendras tu imagen 👌🏻, vamos❕❕ pulsa aqui /to\_qr ya❕❕\.",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(text="Back ↩️", callback_data="back")]   
+        ])
     )
 
 # CONVERSACION PARA GENERAR CODIGO QR
@@ -72,8 +87,7 @@ def to_qr(update: Update, context: CallbackContext) -> int:
     query.answer()
     
     query.edit_message_text(
-        'Por favor, envie el texto que desea llevar a codigo QR\n'
-        'Si desea cancelar, toque aqui /cancel'
+        text='Por favor, envie el texto que desea llevar a codigo QR\n Si desea cancelar, toque aqui /cancel'
     )
     return GETNAME
 
@@ -100,7 +114,7 @@ def pass_qr(update: Update, context: CallbackContext) -> int:
     query.answer()
     
     query.edit_message_text(
-                'Por favor, envie la foto del QR que desea decodificar'
+        text='Por favor, envie el codigo QR que desea leer\n Si desea cancelar, toque aqui /cancel'
     )
     return GETIMG
 
@@ -129,8 +143,12 @@ def cancel(update: Update, context: CallbackContext)->None:
     user = update.effective_user
     logger.info(f'Users: {user.first_name}, cancel process')
     update.message.reply_text(
-        'Se ha interrumpido el proceso de convercion.'
-    )
+        text='Se ha interrumpido el proceso de convercion.',
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
+            [InlineKeyboardButton(text="More Help 💡", callback_data="help")] 
+        ])
+)
     return ConversationHandler.END
 
 # FUNCION PRINCIPAL DEL PROGRAMA
@@ -170,7 +188,7 @@ def main():
     dp.add_handler(conv_handler_add)
     dp.add_handler(conv_handler_read)
     dp.add_handler(CallbackQueryHandler(pattern="help", callback=more_help))
-
+    dp.add_handler(CallbackQueryHandler(pattern="back", callback=back))
     # INICIAMOS NUESTRO BOT 
     update.start_polling()
     # PARA CERARLO CON CTRL+C
