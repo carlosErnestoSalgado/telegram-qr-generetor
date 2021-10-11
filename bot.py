@@ -29,8 +29,7 @@ def start(update: Update, context: CallbackContext) -> None:
         text="👋🏻👋🏻👋🏻 Hola❕, con este bot podras crear tu propio codigo QR, incluso leer cualquier otro\n\n Seleccione la opcion deseada",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(text="Convertir a QR 🔁", callback_data="to_qr"), InlineKeyboardButton(text="Leer Qr 🔁", callback_data="from_qr")],
-            [InlineKeyboardButton(text="More Help 💡", callback_data="help")],
-            [InlineKeyboardButton(text="Back ↩️", callback_data="back")]   
+            [InlineKeyboardButton(text="More Help 💡", callback_data="help")]
         ])
     )
 

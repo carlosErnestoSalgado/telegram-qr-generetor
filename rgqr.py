@@ -24,10 +24,10 @@ def send_file(filename, chat: Chat):
         photo=open(filename, 'rb')
     )
     os.unlink(filename)
-    
+    """"
 # Funciones para la lectura de Qr
 def read_qr(text):
     decoder = decode(Image.open(text))
     os.unlink(text)
     return decoder[0].data.decode()
-    
+    """
