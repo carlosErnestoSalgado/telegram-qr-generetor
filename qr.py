@@ -1,20 +1,22 @@
-# Importamos la biblioteca
-import qrcode
-import random
+import pyqrcode
+from pyqrcode import QRCode
+from telegram import ChatAction
+from telegram.chat import Chat
+import os
 
-# Creamos el código QR y entre comillas simples escribimos la cadena que se va a codificar, en este caso usamos la dirección de nuestro blog
-def generetor(string):
-    
-    img = qrcode.make(string)
-    num = random.randint(1, 1000)
-    list_names = [2]
-    while num in list_names:  
-        num = random.randint(1, 1000)  
-
-    name = str(num) +'.png'
-    # Abrimos un archivo en modo escritura que es donde se guardará nuestro código.
-    with open(name, 'wb') as img_file:
-        # Guardamos nuestro código en el archivo que creamos y lo cerramos
-        img.save(img_file)
-        img_file.close
+def generetor(content, name):
+    name = str(name) + '.png'
+    qrobj = pyqrcode.create(content)
+    with open(name, 'wb') as f:
+        file = qrobj.png(f, scale=10)
     return name
+
+def send(name_file, chat: Chat):
+    chat.send_action(
+        action=ChatAction.UPLOAD_PHOTO,
+        timeout=None
+    )
+    chat.send_photo(
+        photo=open(name_file, 'rb')
+    )
+    os.unlink(name_file)
