@@ -117,11 +117,17 @@ def main():
         },
         fallbacks=[]
     )
-    dp.add_handler(conv_handler)
-    # INICIAMOS NUESTRO BOT 
-    update.start_polling()
-    # PARA CERARLO CON CTRL+C
-    update.idle()
+    # Start the Bot
+    PORT = int(os.environ.get("PORT", "8443"))
+    HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
+    
+    update.start_webhook(
+        listen='0.0.0.0', 
+        port=PORT, 
+        url_path=TOKEN, 
+        webhook_url=f'https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}')
 
+    update.idle()
+    
 if __name__=="__main__":
     main()
